@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Dashboard Laporan Kendaraan</title>
+  <title>REKAPITULASI PEMAKAIAN KENDARAAN</title>
   <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- DataTables -->
@@ -20,7 +20,7 @@
 </head>
 <body class="p-4 bg-light">
   <div class="container">
-    <h2 class="mb-4">Dashboard Pemakaian Kendaraan</h2>
+    <h2 class="mb-4">REKAPITULASI PEMAKAIAN KENDARAAN</h2>
 
     <div class="table-responsive">
       <table id="dataTable" class="display table table-striped table-bordered" style="width:100%">
@@ -68,12 +68,13 @@
     async function loadData() {
       const res = await fetch(url);
       const data = await res.json();
+
       if (!data.length) return;
 
       const headers = Object.keys(data[0]);
       const rows = data.map(obj => headers.map(h => obj[h]));
 
-      // ambil parameter nopol dari URL
+      // 🔎 Ambil parameter NOPOL dari URL
       const params = new URLSearchParams(window.location.search);
       const nopolParam = normalizeKey(params.get("nopol"));
 
@@ -108,29 +109,17 @@
         ordering: true,
         scrollX: true,
         columnDefs: [
-          // Atur lebar beberapa kolom
-          { targets: headers.indexOf("Tanggal"), width: "90px" },
-          { targets: headers.indexOf("Nomor Polisi"), width: "120px" },
-          { targets: headers.indexOf("Nama Pengguna"), width: "200px" },
-          { targets: headers.indexOf("Keperluan"), width: "250px" },
-          { targets: headers.indexOf("Lokasi Tujuan"), width: "250px" },
-          { targets: headers.findIndex(h => h.toLowerCase().includes("jam")), width: "70px" },
-          { targets: headers.findIndex(h => h.toLowerCase().includes("km")), width: "80px" },
-
-          // Kolom teks panjang rata kiri
           {
             targets: [
               headers.indexOf("Jenis Kendaraan"),
-              headers.indexOf("Nama Pengguna"),
+              headers.indexOf("Nama Pemakai"),
               headers.indexOf("Nama Lengkap Driver"),
-              headers.indexOf("Lokasi Tujuan"),
+              headers.indexOf("Tujuan"),
               headers.indexOf("Keperluan"),
               headers.indexOf("Keterangan Tambahan")
             ],
             className: "dt-left"
           },
-
-          // Default center
           { targets: "_all", className: "dt-center" }
         ]
       });
