@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
   <meta charset="UTF-8">
   <title>🚗 REKAPITULASI PEMAKAIAN KENDARAAN</title>
@@ -13,15 +13,6 @@
       text-align: center;
       margin-bottom: 20px;
     }
-    .filter-container {
-      margin-bottom: 20px;
-      display: flex;
-      gap: 15px;
-      justify-content: center;
-    }
-    label {
-      font-weight: bold;
-    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -30,7 +21,7 @@
     th, td {
       border: 1px solid #ddd;
       padding: 6px 10px;
-      text-align: left; /* semua rata kiri */
+      text-align: left;
       font-size: 14px;
     }
     th {
@@ -40,35 +31,10 @@
     tr:nth-child(even) {
       background: #f9f9f9;
     }
-    select, input {
-      padding: 5px;
-      font-size: 14px;
-    }
   </style>
 </head>
 <body>
   <h2>🚗 REKAPITULASI PEMAKAIAN KENDARAAN</h2>
-
-  <div class="filter-container">
-    <div>
-      <label for="nopolFilter">Nomor Polisi:</label>
-      <select id="nopolFilter" onchange="applyFilters()">
-        <option value="">-- Semua --</option>
-        <option value="N 1663 YT">N 1663 YT</option>
-        <option value="N 1109 ZS">N 1109 ZS</option>
-        <option value="N 1108 ZS">N 1108 ZS</option>
-        <option value="N 8063 YI">N 8063 YI</option>
-        <option value="N 9484 YG">N 9484 YG</option>
-        <option value="N 1284 YU">N 1284 YU</option>
-        <option value="N 1409 ZS">N 1409 ZS</option>
-        <option value="N 1471 ZT">N 1471 ZT</option>
-      </select>
-    </div>
-    <div>
-      <label for="dateFilter">Tanggal:</label>
-      <input type="date" id="dateFilter" onchange="applyFilters()">
-    </div>
-  </div>
 
   <table id="dataTable">
     <thead>
@@ -95,9 +61,10 @@
     let tableData = [];
 
     async function fetchData() {
-      const url = "YOUR_DEPLOYED_WEBAPP_URL"; // ganti dengan URL web app kamu
+      const url = "https://script.google.com/macros/s/AKfycbw6lKTCcG_oag4id3JgtvfuScolON0-hogv0nPVzaM_bCQ4BIEHlEQnfPOLtq6gnnTz/exec"; 
       const response = await fetch(url);
       const data = await response.json();
+
       tableData = data.map(row => ({
         tanggal: formatDate(row[0]),
         nama: row[1],
@@ -113,7 +80,8 @@
         bbm: row[11],
         ttd: row[12]
       }));
-      renderTable(tableData);
+
+      applyUrlFilter();
     }
 
     function formatDate(input) {
@@ -157,20 +125,14 @@
       });
     }
 
-    function applyFilters() {
-      const nopolFilter = document.getElementById("nopolFilter").value;
-      const dateFilter = document.getElementById("dateFilter").value;
+    function applyUrlFilter() {
+      const params = new URLSearchParams(window.location.search);
+      const nopolFilter = params.get("nopol");
 
-      const filtered = tableData.filter(row => {
-        let match = true;
-        if (nopolFilter && row.nopol !== nopolFilter) match = false;
-        if (dateFilter) {
-          const filterDate = new Date(dateFilter);
-          const rowDate = new Date(row.tanggal.split("/").reverse().join("-"));
-          if (filterDate.toDateString() !== rowDate.toDateString()) match = false;
-        }
-        return match;
-      });
+      let filtered = tableData;
+      if (nopolFilter) {
+        filtered = tableData.filter(row => row.nopol === decodeURIComponent(nopolFilter));
+      }
 
       renderTable(filtered);
     }
