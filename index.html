@@ -10,16 +10,14 @@
 
   <style>
     h2 { text-align: center; }
-    /* default semua rata kiri */
-    #dataTable th, 
-    #dataTable td {
-      text-align: left !important;
+    #dataTable th {
+      text-align: center;
       vertical-align: middle;
       white-space: nowrap;
     }
     /* khusus lebar kolom tanggal */
     .col-tanggal {
-      width: 110px; /* cukup untuk DD/MM/YYYY */
+      width: 100px;
     }
     .table-responsive { overflow-x: auto; }
   </style>
@@ -133,6 +131,11 @@
               headers.indexOf("Jarak Tempuh")
             ],
             className: "dt-center"
+          },
+          {
+            // sisanya rata kiri
+            targets: "_all",
+            className: "dt-left"
           }
         ]
       });
