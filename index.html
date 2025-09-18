@@ -10,8 +10,10 @@
 
   <style>
     h2 { text-align: center; }
-    #dataTable th {
-      text-align: center;
+    /* default semua rata kiri */
+    #dataTable th, 
+    #dataTable td {
+      text-align: left !important;
       vertical-align: middle;
       white-space: nowrap;
     }
@@ -131,11 +133,6 @@
               headers.indexOf("Jarak Tempuh")
             ],
             className: "dt-center"
-          },
-          {
-            // sisanya rata kiri
-            targets: "_all",
-            className: "dt-left"
           }
         ]
       });
