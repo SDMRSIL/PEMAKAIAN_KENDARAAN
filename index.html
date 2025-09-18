@@ -17,6 +17,10 @@
       vertical-align: middle;
       white-space: nowrap;
     }
+    /* khusus lebar kolom tanggal */
+    .col-tanggal {
+      width: 110px; /* cukup untuk DD/MM/YYYY */
+    }
     .table-responsive { overflow-x: auto; }
   </style>
 </head>
@@ -91,13 +95,19 @@
       const thead = document.querySelector("#dataTable thead");
       const tbody = document.querySelector("#dataTable tbody");
 
-      thead.innerHTML = "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
+      thead.innerHTML = "<tr>" + headers.map(h => {
+        if (h.toLowerCase().includes("tanggal")) {
+          return `<th class="col-tanggal">${h}</th>`;
+        }
+        return `<th>${h}</th>`;
+      }).join("") + "</tr>";
+
       tbody.innerHTML = rows.map(r => {
         return "<tr>" + r.map((val, idx) => {
           let h = headers[idx].toLowerCase();
           if (h.includes("tanggal")) val = formatDate(val);
           if (h.includes("jam")) val = formatTime(val);
-          if (h.includes("km")) val = formatNumber(val);
+          if (h.includes("km") || h.includes("jarak")) val = formatNumber(val);
           return `<td>${val || ""}</td>`;
         }).join("") + "</tr>";
       }).join("");
@@ -112,13 +122,15 @@
         scrollX: true,
         columnDefs: [
           {
-            // kolom yang harus rata tengah
+            // kolom rata tengah
             targets: [
-              headers.indexOf("Tanggal"),
+              headers.indexOf("Tanggal Pemakaian"),
               headers.indexOf("Jam Berangkat"),
-              headers.indexOf("Jam Kembali"),
+              headers.indexOf("Jam Pulang"),
+              headers.indexOf("Jam Pemakaian"),
               headers.indexOf("KM Awal"),
-              headers.indexOf("KM Akhir")
+              headers.indexOf("KM Akhir"),
+              headers.indexOf("Jarak Tempuh")
             ],
             className: "dt-center"
           }
