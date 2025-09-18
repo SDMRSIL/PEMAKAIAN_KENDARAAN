@@ -12,8 +12,9 @@
     h2 { text-align: center; }
     #dataTable th {
       text-align: center !important;
-      vertical-align: middle;
-      white-space: nowrap;
+      vertical-align: middle !important;
+      white-space: normal !important; /* biar bisa pecah baris */
+      line-height: 1.2;
     }
     .table-responsive { overflow-x: auto; }
   </style>
@@ -68,20 +69,18 @@
     async function loadData() {
       const res = await fetch(url);
       const data = await res.json();
-
       if (!data.length) return;
 
-      const headers = Object.keys(data[0]);
-      const rows = data.map(obj => headers.map(h => obj[h]));
+      let headers = Object.keys(data[0]);
 
-      const params = new URLSearchParams(window.location.search);
-      const nopolParam = normalizeKey(params.get("nopol"));
+      // Ubah header tertentu agar lebih rapi
+      headers = headers.map(h => {
+        if (h.toLowerCase() === "tanggal pemakaian") return "Tanggal<br>Pemakaian";
+        return h;
+      });
 
-      const filtered = nopolParam
-        ? rows.filter(r => normalizeKey(r[headers.findIndex(h => h.toLowerCase().includes("nopol"))]) === nopolParam)
-        : rows;
-
-      renderTable(headers, filtered);
+      const rows = data.map(obj => Object.values(obj));
+      renderTable(headers, rows);
     }
 
     function renderTable(headers, rows) {
@@ -91,7 +90,7 @@
       thead.innerHTML = "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
       tbody.innerHTML = rows.map(r => {
         return "<tr>" + r.map((val, idx) => {
-          let h = headers[idx].toLowerCase();
+          let h = headers[idx].replace(/<br>/gi, " ").toLowerCase();
           if (h.includes("tanggal")) val = formatDate(val);
           if (h.includes("jam")) val = formatTime(val);
           if (h.includes("km") || h.includes("jarak")) val = formatNumber(val);
@@ -110,7 +109,7 @@
         columnDefs: [
           {
             targets: [
-              headers.indexOf("Tanggal Pemakaian"),
+              headers.indexOf("Tanggal<br>Pemakaian"),
               headers.indexOf("Jam Berangkat"),
               headers.indexOf("Jam Pulang"),
               headers.indexOf("Jam Pemakaian"),
@@ -121,8 +120,12 @@
             className: "dt-center"
           },
           {
-            targets: headers.indexOf("Tanggal Pemakaian"),
+            targets: headers.indexOf("Tanggal<br>Pemakaian"),
             width: "100px"
+          },
+          {
+            targets: headers.findIndex(h => h.toLowerCase().includes("nopol")),
+            width: "120px"
           },
           {
             targets: "_all",
