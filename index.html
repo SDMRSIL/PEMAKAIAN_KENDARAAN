@@ -119,6 +119,7 @@
         $("#dataTable").DataTable().clear().destroy();
       }
 
+      // 🔑 Pastikan urutan columnDefs: yang kiri dulu, baru default center
       $("#dataTable").DataTable({
         pageLength: 30,
         ordering: true,
