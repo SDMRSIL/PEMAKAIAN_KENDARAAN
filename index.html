@@ -10,16 +10,10 @@
 
   <style>
     h2 { text-align: center; }
-    /* default semua rata kiri */
-    #dataTable th, 
-    #dataTable td {
-      text-align: left !important;
+    #dataTable th {
+      text-align: center !important;
       vertical-align: middle;
       white-space: nowrap;
-    }
-    /* khusus lebar kolom tanggal */
-    .col-tanggal {
-      width: 100px;
     }
     .table-responsive { overflow-x: auto; }
   </style>
@@ -80,7 +74,6 @@
       const headers = Object.keys(data[0]);
       const rows = data.map(obj => headers.map(h => obj[h]));
 
-      // 🔎 Ambil parameter NOPOL dari URL
       const params = new URLSearchParams(window.location.search);
       const nopolParam = normalizeKey(params.get("nopol"));
 
@@ -95,13 +88,7 @@
       const thead = document.querySelector("#dataTable thead");
       const tbody = document.querySelector("#dataTable tbody");
 
-      thead.innerHTML = "<tr>" + headers.map(h => {
-        if (h.toLowerCase().includes("tanggal")) {
-          return `<th class="col-tanggal">${h}</th>`;
-        }
-        return `<th>${h}</th>`;
-      }).join("") + "</tr>";
-
+      thead.innerHTML = "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
       tbody.innerHTML = rows.map(r => {
         return "<tr>" + r.map((val, idx) => {
           let h = headers[idx].toLowerCase();
@@ -122,17 +109,24 @@
         scrollX: true,
         columnDefs: [
           {
-            // kolom rata tengah
             targets: [
               headers.indexOf("Tanggal Pemakaian"),
               headers.indexOf("Jam Berangkat"),
               headers.indexOf("Jam Pulang"),
               headers.indexOf("Jam Pemakaian"),
-              headers.indexOf("KM Awal"),
-              headers.indexOf("KM Akhir"),
+              headers.indexOf("Km Awal"),
+              headers.indexOf("Km Akhir"),
               headers.indexOf("Jarak Tempuh")
             ],
             className: "dt-center"
+          },
+          {
+            targets: headers.indexOf("Tanggal Pemakaian"),
+            width: "110px"
+          },
+          {
+            targets: "_all",
+            className: "dt-left"
           }
         ]
       });
