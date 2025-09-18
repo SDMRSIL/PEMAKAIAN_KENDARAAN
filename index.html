@@ -10,7 +10,7 @@
 </head>
 <body class="p-4 bg-light">
   <div class="container">
-    <h2 class="mb-4">🚗 Dashboard Laporan Kendaraan</h2>
+    <h2 class="mb-4 text-center">🚗 Dashboard Pemakaian Kendaraan</h2>
 
     <div class="mb-3">
       <label for="nopol" class="form-label">Filter NOPOL:</label>
@@ -19,7 +19,7 @@
       </select>
     </div>
 
-    <table id="dataTable" class="display table table-striped" style="width:100%">
+    <table id="dataTable" class="display table table-striped table-bordered" style="width:100%">
       <thead></thead>
       <tbody></tbody>
     </table>
@@ -31,6 +31,31 @@
 
   <script>
     const url = "https://script.google.com/macros/s/AKfycbxTj8Ip8V_HnS-SfsknLwGDa224b68VyNbv0d2-Q2sYfxQ-q7NOf_Td3OgAb5Cy9BSn/exec";
+
+    // --- fungsi format ---
+    function formatDate(value) {
+      if (!value) return "";
+      let d = new Date(value);
+      if (isNaN(d)) return value;
+      let day = String(d.getDate()).padStart(2, '0');
+      let month = String(d.getMonth() + 1).padStart(2, '0');
+      let year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+
+    function formatTime(value) {
+      if (!value) return "";
+      let d = new Date(value);
+      if (isNaN(d)) return value;
+      let hh = String(d.getHours()).padStart(2, '0');
+      let mm = String(d.getMinutes()).padStart(2, '0');
+      return `${hh}:${mm}`;
+    }
+
+    function formatNumber(value) {
+      if (isNaN(value)) return value;
+      return Number(value).toLocaleString("id-ID");
+    }
 
     async function loadData() {
       const res = await fetch(url);
@@ -67,9 +92,18 @@
 
       // Buat body
       const tbody = document.querySelector("#dataTable tbody");
-      tbody.innerHTML = data.map(row =>
-        "<tr>" + headers.map(h => `<td>${row[h]}</td>`).join("") + "</tr>"
-      ).join("");
+      tbody.innerHTML = data.map(row => {
+        return "<tr>" + headers.map(h => {
+          let val = row[h];
+
+          // Atur format khusus
+          if (h === "Tanggal Pemakaian") val = formatDate(val);
+          if (h === "Jam Berangkat" || h === "Jam Pulang" || h === "Jam Pemakaian") val = formatTime(val);
+          if (h === "Km Awal" || h === "Km Akhir") val = formatNumber(val);
+
+          return `<td>${val}</td>`;
+        }).join("") + "</tr>";
+      }).join("");
 
       // Aktifkan DataTable (reset kalau sudah ada)
       if ($.fn.DataTable.isDataTable("#dataTable")) {
