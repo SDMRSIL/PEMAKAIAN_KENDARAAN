@@ -9,19 +9,12 @@
   <link href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" rel="stylesheet">
 
   <style>
-    /* Judul di tengah */
     h2 { text-align: center; }
-
-    /* Semua sel tabel rata tengah */
-    #dataTable th, 
-    #dataTable td {
+    #dataTable th, #dataTable td {
       text-align: center;
       vertical-align: middle;
       white-space: nowrap;
     }
-
-    /* Agar tabel responsif saat lebar banyak kolom */
-    .dataTables_wrapper .dataTables_paginate .paginate_button { padding: 0.2rem 0.5rem; }
     .table-responsive { overflow-x: auto; }
   </style>
 </head>
@@ -57,212 +50,82 @@
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
   <script>
-    // --- GANTI kalau URL apps script berubah ---
     const url = "https://script.google.com/macros/s/AKfycbxTj8Ip8V_HnS-SfsknLwGDa224b68VyNbv0d2-Q2sYfxQ-q7NOf_Td3OgAb5Cy9BSn/exec";
 
-    // Daftar NOPOL yang ingin muncul di dropdown (kamu sudah beri list)
-    const ALLOWED_NOPOL = [
-      "N 1663 YT",
-      "N 1109 ZS",
-      "N 1108 ZS",
-      "N 8063 YI",
-      "N 9484 YG",
-      "N 1284 YU",
-      "N 1409 ZS",
-      "N 1471 ZT"
-    ];
-
-    // Normalisasi string untuk perbandingan (hilangkan spasi berlebih, uppercase)
     function normalizeKey(s) {
-      if (s === null || s === undefined) return "";
+      if (!s) return "";
       return String(s).replace(/\s+/g, " ").trim().toUpperCase();
     }
 
-    // Format tanggal DD/MM/YYYY
     function formatDate(value) {
-      if (!value && value !== 0) return "";
       const d = new Date(value);
-      if (isNaN(d)) return value; // kalau bukan tanggal valid, tampil apa adanya
-      const day = String(d.getDate()).padStart(2, "0");
-      const month = String(d.getMonth() + 1).padStart(2, "0");
-      const year = d.getFullYear();
-      return `${day}/${month}/${year}`;
+      if (isNaN(d)) return value || "";
+      const dd = String(d.getDate()).padStart(2, "0");
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const yyyy = d.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
     }
 
-    // Format jam HH:MM
     function formatTime(value) {
-      if (!value && value !== 0) return "";
       const d = new Date(value);
-      if (isNaN(d)) return value;
+      if (isNaN(d)) return value || "";
       const hh = String(d.getHours()).padStart(2, "0");
       const mm = String(d.getMinutes()).padStart(2, "0");
       return `${hh}:${mm}`;
     }
 
-    // Format angka (km) dengan pemisah ribuan lokal Indonesia
     function formatNumber(value) {
-      if (value === null || value === undefined || value === "") return "";
-      const num = Number(String(value).replace(/[^0-9.-]/g, ""));
-      if (isNaN(num)) return value;
-      return num.toLocaleString("id-ID");
-    }
-
-    // Mendeteksi kolom berdasarkan nama header (case-insensitive, trim)
-    function detectColumns(headers) {
-      const map = {
-        idxNopol: -1,
-        idxDate: -1,
-        idxTimeCandidates: [], // jam berangkat/pulang/pemakaian
-        idxKmStart: -1,
-        idxKmEnd: -1
-      };
-
-      headers.forEach((h, i) => {
-        const key = String(h || "").toLowerCase();
-        if (key.includes("nopol")) map.idxNopol = i;
-        if (key.includes("tanggal") || key.includes("tgl")) map.idxDate = i;
-        if (key.includes("jam berangkat") || key.includes("jam_berangkat") || key.includes("berangkat")) map.idxTimeCandidates.push(i);
-        if (key.includes("jam pulang") || key.includes("jam_pulang") || key.includes("pulang")) map.idxTimeCandidates.push(i);
-        if (key.includes("jam pemakaian") || key.includes("jam_pemakaian") || key.includes("pemakaian")) map.idxTimeCandidates.push(i);
-        if (key.includes("km awal") || key.includes("km_awal") || (key.includes("km") && key.includes("awal"))) map.idxKmStart = i;
-        if (key.includes("km akhir") || key.includes("km_akhir") || (key.includes("km") && key.includes("akhir"))) map.idxKmEnd = i;
-      });
-
-      return map;
+      if (!value) return "";
+      const num = Number(value.toString().replace(/[^0-9.-]/g, ""));
+      return isNaN(num) ? value : num.toLocaleString("id-ID");
     }
 
     async function loadData() {
-      try {
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) throw new Error("Gagal ambil data: " + res.statusText);
-        const data = await res.json();
+      const res = await fetch(url);
+      const data = await res.json();
 
-        if (!Array.isArray(data) || data.length === 0) {
-          console.warn("Data kosong atau bukan array:", data);
-          renderEmpty();
-          return;
-        }
+      if (!data.length) return;
 
-        // Pastikan header order konsisten: ambil keys dari object pertama
-        const headers = Object.keys(data[0]);
+      const headers = Object.keys(data[0]);
+      const rows = data.map(obj => headers.map(h => obj[h]));
 
-        // Build normalized rows array (array of arrays ordered sesuai headers)
-        const rows = data.map(obj => headers.map(h => obj[h]));
+      renderTable(headers, rows);
 
-        // detect kolom penting
-        const colMap = detectColumns(headers);
-
-        // Normalize and attach helper field __nopol_norm for easy compare
-        const normalizedRows = rows.map(r => {
-          const copy = r.slice();
-          const nopolVal = colMap.idxNopol >= 0 ? copy[colMap.idxNopol] : "";
-          copy.__nopol_norm = normalizeKey(nopolVal);
-          return copy;
-        });
-
-        // render dropdown based on ALLOWED list (but still match normalized)
-        const nopolSelect = document.getElementById("nopol");
-        // keep first option (-- Semua Kendaraan --) already present
-        // ensure ALLOWED_NOPOL items are present (avoid duplicates)
-        ALLOWED_NOPOL.forEach(n => {
-          const opt = document.createElement("option");
-          opt.value = n; // keep display value as provided
-          opt.textContent = n;
-          nopolSelect.appendChild(opt);
-        });
-
-        // render initial table (all)
-        renderTable(headers, normalizedRows, colMap);
-
-        // filter handler
-        nopolSelect.addEventListener("change", () => {
-          const val = nopolSelect.value;
-          if (!val) {
-            renderTable(headers, normalizedRows, colMap);
-            return;
-          }
-          const norm = normalizeKey(val);
-          const filtered = normalizedRows.filter(r => r.__nopol_norm === norm);
-          renderTable(headers, filtered, colMap);
-        });
-
-      } catch (err) {
-        console.error(err);
-        renderError(err);
-      }
-    }
-
-    function renderEmpty(){
-      const thead = document.querySelector("#dataTable thead");
-      const tbody = document.querySelector("#dataTable tbody");
-      thead.innerHTML = "";
-      tbody.innerHTML = "<tr><td colspan='20' class='text-center'>Tidak ada data</td></tr>";
-    }
-
-    function renderError(err){
-      const thead = document.querySelector("#dataTable thead");
-      const tbody = document.querySelector("#dataTable tbody");
-      thead.innerHTML = "";
-      tbody.innerHTML = `<tr><td colspan='20' class='text-center'>Error: ${String(err)}</td></tr>`;
-    }
-
-    function renderTable(headers, rows, colMap) {
-      // headers: array of header strings
-      // rows: array of arrays, each array same length as headers; may have .__nopol_norm
-      // colMap: detection map
-
-      // Build thead
-      const thead = document.querySelector("#dataTable thead");
-      thead.innerHTML = "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
-
-      // Build tbody with formatting rules
-      const tbody = document.querySelector("#dataTable tbody");
-      tbody.innerHTML = rows.map(r => {
-        return "<tr>" + headers.map((h, idx) => {
-          let val = r[idx];
-
-          // Format tanggal column
-          if (colMap.idxDate === idx) {
-            val = formatDate(val);
-          }
-
-          // Format time candidate columns
-          if (colMap.idxTimeCandidates.includes(idx)) {
-            val = formatTime(val);
-          }
-
-          // Format km columns
-          if (colMap.idxKmStart === idx || colMap.idxKmEnd === idx) {
-            val = formatNumber(val);
-          }
-
-          // Escape & handle empty
-          if (val === null || val === undefined) val = "";
-          const safe = String(val);
-
-          return `<td>${safe}</td>`;
-        }).join("") + "</tr>";
-      }).join("");
-
-      // Reinit DataTable
-      if ($.fn.DataTable.isDataTable("#dataTable")) {
-        $("#dataTable").DataTable().clear().destroy();
-      }
-
-      // Init DataTable with some defaults
-      $("#dataTable").DataTable({
-        pageLength: 10,
-        ordering: true,
-        autoWidth: false,
-        columnDefs: [
-          { targets: '_all', className: 'dt-center' } // center all columns
-        ],
-        // jika jumlah kolom banyak, aktifkan horizontal scroll
-        scrollX: true
+      document.getElementById("nopol").addEventListener("change", e => {
+        const val = normalizeKey(e.target.value);
+        const filtered = val
+          ? rows.filter(r => normalizeKey(r[headers.findIndex(h => h.toLowerCase().includes("nopol"))]) === val)
+          : rows;
+        renderTable(headers, filtered);
       });
     }
 
-    // start
+    function renderTable(headers, rows) {
+      const thead = document.querySelector("#dataTable thead");
+      const tbody = document.querySelector("#dataTable tbody");
+
+      thead.innerHTML = "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
+      tbody.innerHTML = rows.map(r => {
+        return "<tr>" + r.map((val, idx) => {
+          let h = headers[idx].toLowerCase();
+          if (h.includes("tanggal")) val = formatDate(val);
+          if (h.includes("jam")) val = formatTime(val);
+          if (h.includes("km")) val = formatNumber(val);
+          return `<td>${val || ""}</td>`;
+        }).join("") + "</tr>";
+      }).join("");
+
+      if ($.fn.DataTable.isDataTable("#dataTable")) {
+        $("#dataTable").DataTable().clear().destroy();
+      }
+      $("#dataTable").DataTable({
+        pageLength: 10,
+        ordering: true,
+        scrollX: true,
+        columnDefs: [{ targets: "_all", className: "dt-center" }]
+      });
+    }
+
     loadData();
   </script>
 </body>
